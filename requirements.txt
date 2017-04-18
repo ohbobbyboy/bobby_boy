@@ -1,0 +1,5 @@
+requests
+zbar
+pillow
+suds
+pygame==1.9.3
