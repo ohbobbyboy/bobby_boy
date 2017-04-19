@@ -52,7 +52,7 @@ if receipt:
                          report_name,
                          receipt.dreb_time,
                          receipt.raw_sum,
-                         receipt.calculated_sum)
+                         receipt.total_sum)
 
     report.edit(report_name)
 

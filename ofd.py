@@ -29,8 +29,10 @@ class OFDProvider:
     kkt = None
     # время покупки
     time = None
-    # сумма чека
+    # сумма чека из ОФД
     raw_sum = 0
+    # подсчитанная сумма чека
+    total_sum = 0
     # номер чека
     number = 0
     # идентификатор чека на сервере
@@ -58,7 +60,7 @@ class OFDProvider:
             "raw_time": fields[0],
             "time": time,
             "dreb_time": drebtime,
-            "raw_sum": fields[1],
+            "raw_sum": "{0:.2f}".format(float(fields[1])),
             "fiscal_drive_id": fields[2],
             "fiscal_document_number": fields[3],
             "fiscal_id": fields[4],
@@ -139,31 +141,37 @@ class PlatformaOFD(OFDProvider):
             rows = soup.select("div.row")
             # items_count = len(items)
             # print("Found items: {}".format(items_count))
-            self.calculated_sum = 0
+            self.total_sum = 0
 
-            def extract_text(row_obj):
+            def extract_value(row_obj):
                 return row_obj.find('div', {'class': 'col-xs-4'}).get_text().encode("utf-8")
+
+            def extract_key(row_obj):
+                return row_obj.find('div', {'class': 'col-xs-8'}).get_text().encode("utf-8")
 
             items = []
             for i, row in enumerate(rows):
                 if row.get_text().encode("utf-8") != "наименование товара (реквизиты)":
                     continue
-                name = extract_text(rows[i + 1])
-                price = float(extract_text(rows[i + 2]))
-                count = int(float(extract_text(rows[i + 3])))
-                summa = float(extract_text(rows[i + 4]))
-                self.calculated_sum += summa
+                name = extract_value(rows[i + 1])
+                if extract_key(rows[i + 2]) == "штриховой код EAN13":
+                    i += 1
+                price = float(extract_value(rows[i + 2]))
+                count = int(float(extract_value(rows[i + 3])))
+                summa = float(extract_value(rows[i + 4]))
+                self.total_sum += summa
                 if count != 1:
                     items.append(
                         ("{} ({} * {})".format(name, price, count),
-                         "-{0:.1f}".format(summa)))
+                         "-{0:.2f}".format(summa)))
                 else:
-                    items.append((name, "-{0:.1f}".format(summa)))
+                    items.append((name, "-{0:.2f}".format(summa)))
 
-            print("Items total sum: {}".format(self.calculated_sum))
-            if self.calculated_sum != self.raw_sum:
-                print(
-                    "WARNING! Manually calculated sum is not equal to the receipt sum!")
+            print("Items total sum: {}".format(self.total_sum))
+            self.total_sum = "{0:.2f}".format(self.total_sum)
+            if self.total_sum != self.raw_sum:
+                print("WARNING! Manually calculated sum {} is not equal to the receipt sum {}!".format(
+                    self.total_sum, self.raw_sum))
 
             self.items = items
             return items
@@ -190,8 +198,7 @@ class OFD1(OFDProvider):
         }
         # fix for single quotes server error
         ofd1_payload = json.dumps(ofd1_payload, sort_keys=True)
-        print(ofd1_payload)
-
+        
         session = requests.Session()
         session.get(self.url_first_get)
 
@@ -210,8 +217,6 @@ class OFD1(OFDProvider):
         # print(cookies)
 
         ofd1 = session.post(self.url_receipt_find, data=ofd1_payload)
-
-        print(ofd1.content)
 
         if (ofd1.status_code == 200):
             answer = ofd1.json()
@@ -232,7 +237,7 @@ class OFD1(OFDProvider):
                     with open(filename, 'w') as outfile:
                         outfile.write(self.raw)
                 else:
-                    print("Ticket already saved!")
+                    print("Receipt already saved!")
                     if not self.resend:
                         print("Skipping...")
                         return False
@@ -255,7 +260,7 @@ class OFD1(OFDProvider):
 
     def get_items(self):
         if self.receipt_data:
-            total_sum = 0
+            self.total_sum = 0
             items_count = len(self.receipt_data["ticket"]["items"])
             print("Found items: {}".format(items_count))
 
@@ -263,23 +268,23 @@ class OFD1(OFDProvider):
             for item in self.receipt_data["ticket"]["items"]:
                 data = item["commodity"]
                 name = data["name"].encode('utf8')
-                summa = data["sum"]
+                summa = float(data["sum"])
                 price = data["price"]
                 count = data["quantity"]
-                total_sum += float(summa)
+                self.total_sum += summa
 
                 if count != 1:
                     items.append(
                         ("{} ({} * {})".format(name, price, count),
-                         "-{0:.1f}".format(summa)))
+                         "-{0:.2f}".format(summa)))
                 else:
-                    items.append((name, "-{0:.1f}".format(summa)))
+                    items.append((name, "-{0:.2f}".format(summa)))
 
-            print("Items total sum: {}".format(total_sum))
-            self.calculated_sum = str(total_sum)
-            if self.calculated_sum != self.raw_sum:
-                print(
-                    "WARNING! Manually calculated sum is not equal to the receipt sum!")
+            print("Items total sum: {}".format(self.total_sum))
+            self.total_sum = "{0:.2f}".format(self.total_sum)
+            if self.total_sum != self.raw_sum:
+                print("WARNING! Manually calculated sum {} is not equal to the receipt sum {}!".format(
+                    self.total_sum, self.raw_sum))
 
             self.items = items
             return items
