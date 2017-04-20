@@ -79,7 +79,7 @@ class OFDProvider:
                 data['time'], data['raw_sum'], data['fiscal_drive_id'], data['fiscal_document_number'], data['fiscal_id'], data['number']))
 
             # для списка известных провайдеров
-            for provider in [OFD1, PlatformaOFD]:
+            for provider in [OFD1, PlatformaOFD, Taxcom]:
                 # проверяем что данные удовлетворяют требованиям ОФД
                 if provider(self.resend).is_suitable(data):
                     # инициализируем и загружаем данные
@@ -110,6 +110,72 @@ class OFDProvider:
         return os.path.join(config.report_dir, filename)
 
 
+class Taxcom(OFDProvider):
+    url_receipt_get = "https://receipt.taxcom.ru/v01/show?fp={}"
+
+    def is_suitable(self, data):
+        return data['fiscal_id']
+
+    def search(self):
+        print("Search in Taxcom...")
+        request = requests.get(self.url_receipt_get.format(self.fiscal_id))
+        if "Такой чек не найден" in request.content:
+            print("Not found!")
+            return False
+        else:
+            self.receipt_data = request.content
+            filename = self.get_receipt_file_name()
+
+            if not os.path.exists(filename):
+                with open(filename, 'w') as outfile:
+                    outfile.write(self.receipt_data)
+            return True
+
+    def get_items(self):
+        if self.receipt_data:
+            total_sum = 0
+            print(self.receipt_data)
+            soup = BeautifulSoup(self.receipt_data, "lxml")
+            rows = soup.select("td.position")[:-1]
+            price_counts = soup.select("tr.result")
+            self.total_sum = 0
+
+            def extract_count(row_obj):
+                return row_obj.find_all('span')[0].get_text().encode("utf-8")
+
+            def extract_price(row_obj):
+                return row_obj.find_all('span')[1].get_text().encode("utf-8")
+
+            items = []
+            for i, row in enumerate(rows):
+
+                name = row.get_text().encode("utf-8")
+                print(name)
+
+                price = float(extract_price(price_counts[i]))
+                count = float(extract_count(price_counts[i]))
+                summa = price * count
+                self.total_sum += summa
+                if count != 1:
+                    items.append(
+                        ("{} ({} * {})".format(name, price, count),
+                         "-{0:.2f}".format(summa)))
+                else:
+                    items.append((name, "-{0:.2f}".format(summa)))
+
+            print("Items total sum: {}".format(self.total_sum))
+            self.total_sum = "{0:.2f}".format(self.total_sum)
+            if self.total_sum != self.raw_sum:
+                print("WARNING! Manually calculated sum {} is not equal to the receipt sum {}!".format(
+                    self.total_sum, self.raw_sum))
+
+            self.items = items
+            return items
+        else:
+            print("No receipt data!")
+            return False
+
+
 class PlatformaOFD(OFDProvider):
     url_receipt_get = "https://lk.platformaofd.ru/web/noauth/cheque?fn={}&fp={}"
 
@@ -136,11 +202,7 @@ class PlatformaOFD(OFDProvider):
         if self.receipt_data:
             total_sum = 0
             soup = BeautifulSoup(self.receipt_data, "lxml")
-            # rows = soup.findAll("div", { "class": "row"} )
-            # items = rows.findAll("div", { "class": "col-xs-12"})[1:-1]
             rows = soup.select("div.row")
-            # items_count = len(items)
-            # print("Found items: {}".format(items_count))
             self.total_sum = 0
 
             def extract_value(row_obj):
@@ -198,7 +260,7 @@ class OFD1(OFDProvider):
         }
         # fix for single quotes server error
         ofd1_payload = json.dumps(ofd1_payload, sort_keys=True)
-        
+
         session = requests.Session()
         session.get(self.url_first_get)
 

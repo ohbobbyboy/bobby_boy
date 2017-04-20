@@ -12,11 +12,11 @@ def edit(filename):
 
 
 def make(items,
-                categories,
-                filename,
-                datetime,
-                receipt_sum,
-                calculated_sum):
+         categories,
+         filename,
+         datetime,
+         receipt_sum,
+         calculated_sum):
 
     with open(filename, 'wb') as csvfile:
         report = csv.writer(csvfile, delimiter=';',

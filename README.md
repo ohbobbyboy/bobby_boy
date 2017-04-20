@@ -19,9 +19,9 @@ bobby_boy
 В настоящее время поддерживается работа с ОФД:
 - [Первый ОФД](https://consumer.1-ofd.ru/#/landing) (Ашан, Виктория)
 - [Платформа ОФД](https://lk.platformaofd.ru/web/noauth/cheque/search)
+- [Такском](https://receipt.taxcom.ru/)
 - ~~[OFD.RU](https://ofd.ru/checkinfo)~~
 - ~~[ОФД-Я](https://ofd-ya.ru/check)~~
-- ~~[Такском](https://receipt.taxcom.ru/)~~
 
 ### Использование
 

@@ -9,12 +9,14 @@ import drebedengi
 import report
 from ofd import OFDProvider
 
+
 # создаём необходимые директории если отсутствуют
 def init():
     if not os.path.exists(config.receipt_dir):
         os.makedirs(config.receipt_dir)
     if not os.path.exists(config.report_dir):
         os.makedirs(config.report_dir)
+
 
 # resend - разрешение повторно передавать данные по чеку, который уже сохранен
 def recognize(resend, receipt_text):
@@ -33,10 +35,10 @@ init()
 if len(sys.argv) > 1 and sys.argv[1] == "--text":
     # распознаём из введённого текста
     receipt = recognize(config.already_recognized_send,
-                       raw_input("Enter content from QR: "))
+                        raw_input("Enter content from QR: "))
 else:
     receipt = recognize(config.already_recognized_send,
-                       qr.get_content_with_gui())
+                        qr.get_content_with_gui())
 
 if receipt:
     report_name = receipt.get_csv_file_name()
@@ -48,11 +50,11 @@ if receipt:
     categories = dreb_session.get_categories()
 
     report.make(receipt.items,
-                         categories,
-                         report_name,
-                         receipt.dreb_time,
-                         receipt.raw_sum,
-                         receipt.total_sum)
+                categories,
+                report_name,
+                receipt.dreb_time,
+                receipt.raw_sum,
+                receipt.total_sum)
 
     report.edit(report_name)
 
