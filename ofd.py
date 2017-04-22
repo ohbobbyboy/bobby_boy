@@ -111,14 +111,14 @@ class OFDProvider:
 
 
 class Taxcom(OFDProvider):
-    url_receipt_get = "https://receipt.taxcom.ru/v01/show?fp={}"
+    url_receipt_get = "https://receipt.taxcom.ru/v01/show?fp={}&s={}"
 
     def is_suitable(self, data):
         return data['fiscal_id']
 
     def search(self):
         print("Search in Taxcom...")
-        request = requests.get(self.url_receipt_get.format(self.fiscal_id))
+        request = requests.get(self.url_receipt_get.format(self.fiscal_id,self.raw_sum))
         if "Такой чек не найден" in request.content:
             print("Not found!")
             return False
@@ -134,7 +134,6 @@ class Taxcom(OFDProvider):
     def get_items(self):
         if self.receipt_data:
             total_sum = 0
-            print(self.receipt_data)
             soup = BeautifulSoup(self.receipt_data, "lxml")
             rows = soup.select("td.position")[:-1]
             price_counts = soup.select("tr.result")
@@ -150,7 +149,6 @@ class Taxcom(OFDProvider):
             for i, row in enumerate(rows):
 
                 name = row.get_text().encode("utf-8")
-                print(name)
 
                 price = float(extract_price(price_counts[i]))
                 count = float(extract_count(price_counts[i]))
