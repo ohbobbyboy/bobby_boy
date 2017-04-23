@@ -27,6 +27,8 @@ class OFDProvider:
     fiscal_id = None
     # регистрационный номер ККТ
     kkt = None
+    # инн
+    inn = None
     # время покупки
     time = None
     # сумма чека из ОФД
@@ -68,9 +70,10 @@ class OFDProvider:
         }
 
     # определение ОФД по данным чека и запросами
-    def detect(self, text):
+    def detect(self, text, kkt=None, inn=None):
         ofd_type1_match = re.match(self.ofd_type1_match_regexp, text)
         # проверка чека по обычному на данный момент содержанию QR
+
         if ofd_type1_match:
             # получаем данные чека
             data = self.parse_data(ofd_type1_match.groups())
@@ -78,8 +81,11 @@ class OFDProvider:
             print("Ticket {3} at {0} with sum {1}, FPD {4}, fiscal drive {2} (n={5})".format(
                 data['time'], data['raw_sum'], data['fiscal_drive_id'], data['fiscal_document_number'], data['fiscal_id'], data['number']))
 
+            data['kkt'] = kkt
+            data['inn'] = inn
+
             # для списка известных провайдеров
-            for provider in [OFD1, PlatformaOFD, Taxcom]:
+            for provider in [PlatformaOFD, Taxcom, OFDRU, OFD1]:
                 # проверяем что данные удовлетворяют требованиям ОФД
                 if provider(self.resend).is_suitable(data):
                     # инициализируем и загружаем данные
@@ -110,15 +116,74 @@ class OFDProvider:
         return os.path.join(config.report_dir, filename)
 
 
+class OFDRU(OFDProvider):
+    url_receipt_get = "https://ofd.ru/api/rawdoc/RecipeInfo?Fn={}&Kkt={}&Inn={}&Num={}&Sign={}"
+
+    def is_suitable(self, data):
+        return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number'] and data['kkt'] and data['inn']
+
+    def search(self):
+        print("Search in OFD.RU...")
+        url = self.url_receipt_get.format(
+            self.fiscal_drive_id, self.kkt, self.inn, self.fiscal_document_number, self.fiscal_id)
+        request = requests.get(url)
+        if "Такой чек не найден" in request.content:
+            print("Not found!")
+            return False
+        else:
+            self.receipt_data = request.content
+            filename = self.get_receipt_file_name()
+
+            if not os.path.exists(filename):
+                with open(filename, 'w') as outfile:
+                    outfile.write(self.receipt_data)
+            return True
+
+    def get_items(self):
+        if self.receipt_data:
+            self.total_sum = 0
+            self.receipt_data = json.loads(self.receipt_data)
+            items_count = len(self.receipt_data["Document"]["Items"])
+            print("Found items: {}".format(items_count))
+
+            items = []
+            for item in self.receipt_data["Document"]["Items"]:
+                name = item["Name"].encode('utf8')
+                summa = float(item["Total"]) / 100.0
+                price = float(item["Price"]) / 100.0
+                count = item["Quantity"]
+                self.total_sum += summa
+
+                if count != 1:
+                    items.append(
+                        ("{} ({} * {})".format(name, price, count),
+                         "-{0:.2f}".format(summa)))
+                else:
+                    items.append((name, "-{0:.2f}".format(summa)))
+
+            print("Items total sum: {}".format(self.total_sum))
+            self.total_sum = "{0:.2f}".format(self.total_sum)
+            if self.total_sum != self.raw_sum:
+                print("WARNING! Manually calculated sum {} is not equal to the receipt sum {}!".format(
+                    self.total_sum, self.raw_sum))
+
+            self.items = items
+            return items
+        else:
+            print("No receipt data!")
+            return False
+
+
 class Taxcom(OFDProvider):
     url_receipt_get = "https://receipt.taxcom.ru/v01/show?fp={}&s={}"
 
     def is_suitable(self, data):
-        return data['fiscal_id']
+        return data['fiscal_id']  and not data['kkt']
 
     def search(self):
         print("Search in Taxcom...")
-        request = requests.get(self.url_receipt_get.format(self.fiscal_id,self.raw_sum))
+        request = requests.get(self.url_receipt_get.format(
+            self.fiscal_id, self.raw_sum))
         if "Такой чек не найден" in request.content:
             print("Not found!")
             return False
@@ -178,7 +243,7 @@ class PlatformaOFD(OFDProvider):
     url_receipt_get = "https://lk.platformaofd.ru/web/noauth/cheque?fn={}&fp={}"
 
     def is_suitable(self, data):
-        return data['fiscal_drive_id'] and data['fiscal_id']
+        return data['fiscal_drive_id'] and data['fiscal_id'] and not data['kkt']
 
     def search(self):
         print("Search in Platforma OFD...")
@@ -246,7 +311,7 @@ class OFD1(OFDProvider):
     url_receipt_find = "https://consumer.1-ofd.ru/api/tickets/find-ticket"
 
     def is_suitable(self, data):
-        return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number']
+        return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number'] and not data['kkt']
 
     def search(self):
         print("Search in ofd1...")

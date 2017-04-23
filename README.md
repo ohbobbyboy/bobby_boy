@@ -20,7 +20,7 @@ bobby_boy
 - [Первый ОФД](https://consumer.1-ofd.ru/#/landing) (Ашан, Виктория)
 - [Платформа ОФД](https://lk.platformaofd.ru/web/noauth/cheque/search)
 - [Такском](https://receipt.taxcom.ru/)
-- ~~[OFD.RU](https://ofd.ru/checkinfo)~~
+- [OFD.RU](https://ofd.ru/checkinfo) (Связной) - потребуется ручной ввод РН ККТ и ИНН с чека
 - ~~[ОФД-Я](https://ofd-ya.ru/check)~~
 
 ### Использование
