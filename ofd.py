@@ -215,8 +215,8 @@ class Taxcom(OFDProvider):
 
                 name = row.get_text().encode("utf-8")
 
-                price = float(extract_price(price_counts[i]))
-                count = float(extract_count(price_counts[i]))
+                price = float(extract_price(price_counts[i]).replace(',','.'))
+                count = float(extract_count(price_counts[i]).replace(',','.'))
                 summa = price * count
                 self.total_sum += summa
                 if count != 1:
