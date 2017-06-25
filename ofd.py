@@ -94,6 +94,7 @@ class OFDProvider:
                     # если поиск успешен, то возвращаем инстанс чека этого ОФД
                     if ofd.search():
                         return ofd
+            return True
 
         elif text.startswith("http://check.egais.ru"):
             print("This is an EGAIS receipt without sum!")
