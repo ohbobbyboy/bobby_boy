@@ -17,7 +17,7 @@ bobby_boy
 соответствующие позиций в чеке при необходимости. 
 
 В настоящее время поддерживается работа с ОФД:
-- [Первый ОФД](https://consumer.1-ofd.ru/#/landing) (Ашан, Виктория, Пятёрочка)
+- [Первый ОФД](https://consumer.1-ofd.ru/#/landing) (Ашан, Виктория, Пятёрочка, BILLA)
 - [Платформа ОФД](https://lk.platformaofd.ru/web/noauth/cheque/search) (Крошка-картошка)
 - [Такском](https://receipt.taxcom.ru/) (Карусель, KFC)
 - [OFD.RU](https://ofd.ru/checkinfo) (Связной) - потребуется ручной ввод РН ККТ и ИНН с чека
