@@ -21,7 +21,7 @@ bobby_boy
 - [Платформа ОФД](https://lk.platformaofd.ru/web/noauth/cheque/search) (Крошка-картошка)
 - [Такском](https://receipt.taxcom.ru/) (Карусель, KFC)
 - [OFD.RU](https://ofd.ru/checkinfo) (Связной) - потребуется ручной ввод РН ККТ и ИНН с чека
-- ~~[ОФД-Я](https://ofd-ya.ru/check)~~
+- [ОФД-Я](https://ofd-ya.ru/check) (Перекрёсток) - потребуется ручной ввод РН ККТ с чека (ИНН необязателен)
 - ~~[Астрал ОФД](https://ofd.astralnalog.ru/)~~
 - ~~[ОФД Яндекс](https://ofd.yandex.ru/)~~
 - ~~[Контур ОФД](https://kontur.ru/ofd)~~

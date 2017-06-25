@@ -32,7 +32,7 @@ def recognize(resend, receipt_text):
         inn = raw_input("Enter `INN`: ")
         ofd_receipt = OFDProvider(resend).detect(receipt_text,kkt,inn)
 
-        if ofd_receipt:
+        if ofd_receipt is object:
             items = ofd_receipt.get_items()
             if items:
                 return ofd_receipt

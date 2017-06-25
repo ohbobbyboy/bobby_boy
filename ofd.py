@@ -85,7 +85,7 @@ class OFDProvider:
             data['inn'] = inn
 
             # для списка известных провайдеров
-            for provider in [PlatformaOFD, Taxcom, OFDRU, OFD1]:
+            for provider in [PlatformaOFD, Taxcom, OFDRU, OFD1, OFDYA]:
                 # проверяем что данные удовлетворяют требованиям ОФД
                 if provider(self.resend).is_suitable(data):
                     # инициализируем и загружаем данные
@@ -94,6 +94,7 @@ class OFDProvider:
                     # если поиск успешен, то возвращаем инстанс чека этого ОФД
                     if ofd.search():
                         return ofd
+
             return True
 
         elif text.startswith("http://check.egais.ru"):
@@ -128,7 +129,7 @@ class OFDRU(OFDProvider):
         url = self.url_receipt_get.format(
             self.fiscal_drive_id, self.kkt, self.inn, self.fiscal_document_number, self.fiscal_id)
         request = requests.get(url)
-        if "Такой чек не найден" in request.content:
+        if request.status_code == 404:
             print("Not found!")
             return False
         else:
@@ -397,6 +398,65 @@ class OFD1(OFDProvider):
                 summa = float(data["sum"])
                 price = data["price"]
                 count = data["quantity"]
+                self.total_sum += summa
+
+                if count != 1:
+                    items.append(
+                        ("{} ({} * {})".format(name, price, count),
+                         "-{0:.2f}".format(summa)))
+                else:
+                    items.append((name, "-{0:.2f}".format(summa)))
+
+            print("Items total sum: {}".format(self.total_sum))
+            self.total_sum = "{0:.2f}".format(self.total_sum)
+            if self.total_sum != self.raw_sum:
+                print("WARNING! Manually calculated sum {} is not equal to the receipt sum {}!".format(
+                    self.total_sum, self.raw_sum))
+
+            self.items = items
+            return items
+        else:
+            print("No receipt data!")
+            return False
+
+class OFDYA(OFDProvider):
+    url_receipt_get = "https://ofd-ya.ru/getFiscalDoc?kktRegId={}&fiscalSign={}&json=true"
+
+    def is_suitable(self, data):
+        return data['fiscal_document_number'] and data['kkt']
+
+    def search(self):
+        print("Search in OFD-YA...")
+        url = self.url_receipt_get.format(self.kkt, self.fiscal_id)
+        request = requests.get(url)
+        if request.status_code == 200 and request.text != '{}':
+            self.receipt_data = request.content
+            filename = self.get_receipt_file_name()
+
+            if not os.path.exists(filename):
+                with open(filename, 'w') as outfile:
+                    outfile.write(self.receipt_data)
+
+            return True
+        else:
+            print("Error {} while searching in ofd-ya!".format(request.status_code))
+            if config.debug:
+                print(request.text)
+            return False
+
+    def get_items(self):
+        if self.receipt_data:
+            self.total_sum = 0
+            self.receipt_data = json.loads(self.receipt_data)
+            items_count = len(self.receipt_data["requestmessage"]["items"])
+            print("Found items: {}".format(items_count))
+
+            items = []
+            for item in self.receipt_data["requestmessage"]["items"]:
+                name = item["name"].encode('utf8')
+                summa = int(item["sum"]) / 100.0
+                price = int(item["price"]) / 100.0
+                count = item["quantity"]
                 self.total_sum += summa
 
                 if count != 1:
