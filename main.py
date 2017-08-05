@@ -5,9 +5,9 @@ import os
 import sys
 import config
 import argparse
-import drebedengi
 import report
 from ofd import OFDProvider
+from drebedengi import Drebedengi
 
 
 # создаём необходимые директории если отсутствуют
@@ -38,40 +38,53 @@ def recognize(resend, receipt_text):
                 return ofd_receipt
     return False
 
+parser = argparse.ArgumentParser(description='Import receipts data from OFD to Drebedengi')
+parser.add_argument('--text', help='take receipt data from string')
+parser.add_argument('--noediting', action='store_false', help='disable manual report editing')
+args = parser.parse_args()
 
 init()
 
-if len(sys.argv) > 1 and sys.argv[1] == "--text":
+if not args.text is None:
     # распознаём из введённого текста
-    receipt = recognize(config.already_recognized_send,
-                        raw_input("Enter content from QR: "))
+    receipt = recognize(config.already_recognized_send, args.text)
 else:
     receipt = recognize(config.already_recognized_send,
                         qr.get_content_with_gui())
 
 if receipt:
     report_name = receipt.get_csv_file_name()
-    dreb_session = drebedengi.Drebedengi(config.username, config.password)
+    dreb_session = Drebedengi(config.username, config.password)
     if not dreb_session.logged_in():
         print("Auth is not successful!")
         sys.exit(-1)
 
     categories = dreb_session.get_categories()
 
+    sms_saved_receipt = dreb_session.search(receipt.dreb_time, receipt.raw_sum)
+
+    if sms_saved_receipt:
+        receipt.payment_method = sms_saved_receipt['payment_method']
+
     report.make(receipt.items,
                 categories,
                 report_name,
                 receipt.dreb_time,
                 receipt.raw_sum,
-                receipt.total_sum)
+                receipt.total_sum,
+                receipt.payment_method)
 
-    report.edit(report_name)
+    if args.noediting:
+        report.edit(report_name)
 
     raw_input("Press Enter to export report to Drebedengi...")
 
     report.clear(report_name)
 
-    dreb_session.send_csv(report_name)
+    import_result = dreb_session.send_csv(report_name)
+
+    if import_result and sms_saved_receipt:
+        dreb_session.delete_item(sms_saved_receipt['id'])
 
 else:
     print("Receipt search failed!")

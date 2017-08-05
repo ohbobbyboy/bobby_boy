@@ -43,6 +43,8 @@ class OFDProvider:
     receipt_data = None
     # опция для возможности повторной отправки данных уже сохраненного чека
     resend = False
+    # место хранения и траты денег по умолчанию
+    payment_method = config.payment_method['default']
 
     # регулярное выражение для проверки соответствия формату текста QR
     ofd_type1_match_regexp = "t=([\dT]+)&s=([\d\.]+)&fn=(\d+)&i=(\d+)&fp=(\d+)&n=(\d+)"
@@ -368,6 +370,7 @@ class OFD1(OFDProvider):
                     if not self.resend:
                         print("Skipping...")
                         return False
+
                 return True
             else:
                 print("Error {} while getting receipt from ofd1!".format(

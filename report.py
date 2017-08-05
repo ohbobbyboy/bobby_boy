@@ -16,7 +16,8 @@ def make(items,
          filename,
          datetime,
          receipt_sum,
-         calculated_sum):
+         calculated_sum,
+         payment_method):
 
     with open(filename, 'wb') as csvfile:
         report = csv.writer(csvfile, delimiter=';',
@@ -35,7 +36,7 @@ def make(items,
                          "Время", "Комментарий", "Пользователь", "Группа"])
         for name, summa in items:
             report.writerow([summa, config.currency_name, config.category_name,
-                             config.account_name, datetime, name, "", ""])
+                             payment_method, datetime, name, "", ""])
 
         report.writerow(["# Сумма", calculated_sum])
         report.writerow(["# По чеку", receipt_sum])
