@@ -1,11 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import re
-import config
-import datetime
 import requests
 from bs4 import BeautifulSoup
-from config import username, password, api_key, payment_method
+from config import payment_method
 
 # взаимодействие реализовано по HTTP - притворяемся браузер-клиентом
 # возможна реализация через SOAP: http://www.drebedengi.ru/soap/dd.wsdl
@@ -21,13 +18,13 @@ class Drebedengi:
     categories = []
 
 
-    def __init__(self, user, password):
+    def __init__(self, user, passw):
         session = requests.Session()
 
         data = {
             "o": "",
             "email": user,
-            "password": password,
+            "password": passw,
             "ssl": "on"
         }
 
@@ -61,7 +58,7 @@ class Drebedengi:
         r = self.session.post(http_csv_confirm_url)
         post2 = r.status_code
 
-        if post1 == 200 and post2 == 200:       # TODO: improve error checking by page content 
+        if post1 == 200 and post2 == 200:       # TODO: improve error checking by page content
             print("Successfully imported!")
             return True
         else:
@@ -69,10 +66,10 @@ class Drebedengi:
             return False
 
 
-    def delete_item(self, id):
+    def delete_item(self, item_id):
         payload = {
             'action': 'delete_item',
-            'wasteId': id,
+            'wasteId': item_id,
             'is_report': '1',
             'pref': 'waste'
         }
@@ -81,7 +78,7 @@ class Drebedengi:
             print("Old SMS item successfully removed!")
 
 
-    def search(self, date, sum):
+    def search(self, date, summa):
         date = date.split()[0]
 
         payload = {
@@ -103,7 +100,7 @@ class Drebedengi:
             'is_course_hist': 'false',
             'r_duty': '0',
             'r_sum': '1',
-            'r_sum_from': sum,
+            'r_sum_from': summa,
             'r_sum_to': '',
             'r_place[]': '0',
             'r_category[]': '0',
@@ -121,9 +118,9 @@ class Drebedengi:
             return None
         else:
             total_sum_tag.next_sibling.next_sibling.decompose()
-        
+
         sum_blocks = soup.find_all("span", class_="red")
-        
+
         for sum_block in sum_blocks:
             if sum_block.text == "-"+str(sum):
                 print("SMS with the receipt was found, it will be deleted after import")
@@ -131,13 +128,14 @@ class Drebedengi:
                 parent_tag = sum_block.parent.parent.parent
                 desc_tag = parent_tag.next_sibling.next_sibling.next_sibling.next_sibling.next_sibling.next_sibling
                 id_tag = parent_tag.previous_sibling.previous_sibling
-                
+
                 item_text = desc_tag.text
                 item_id = id_tag.get('id').split('_')[1]
 
                 method = payment_method["default"]
 
-                for substr in payment_method['sms_based']:      # TODO: additional detecting by payment method of item (if SMS text was not saved) 
+                # TODO: additional detecting by payment method of item (if SMS text was not saved)
+                for substr in payment_method['sms_based']:
                     if item_text.find(substr) != -1:
                         method = payment_method['sms_based'][substr]
                         print("Detected payment method by SMS text: "+method)

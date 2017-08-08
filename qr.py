@@ -1,11 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import sys
-import zbar
 import time
+import zbar
 import config
 import pygame
-import pygame.camera
 from pygame import camera
 from PIL import Image
 from qrtools import QR
@@ -15,7 +14,7 @@ def get_qr_content(with_gui=False, manual_detect=False):
 
     detected = False
     camera.init()
-    if not len(camera.list_cameras()):
+    if not camera.list_cameras():
         print("No camera detected!")
         sys.exit(-1)
     cam = camera.Camera(camera.list_cameras()[config.camera_number-1])
@@ -70,7 +69,7 @@ def get_qr_content(with_gui=False, manual_detect=False):
 
                 for qr in zbar_image:
                     if data:
-                        "Additional QR recognized!"
+                        print("Additional QR recognized!")
                     data = qr.data
 
             if data:
@@ -79,7 +78,6 @@ def get_qr_content(with_gui=False, manual_detect=False):
 
         except Exception as e:
             print("Error! " + str(e))
-            pass
         finally:
             time.sleep(config.qr_scan_waiting)
 

@@ -1,14 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import qr
 import os
 import sys
-import config
 import argparse
+import qr
+import config
 import report
 from ofd import OFDProvider
 from drebedengi import Drebedengi
-
 
 # создаём необходимые директории если отсутствуют
 def init():
@@ -30,7 +29,7 @@ def recognize(resend, receipt_text):
     elif ofd_receipt:
         kkt = raw_input("Enter `PH KKT`: ")
         inn = raw_input("Enter `INN`: ")
-        ofd_receipt = OFDProvider(resend).detect(receipt_text,kkt,inn)
+        ofd_receipt = OFDProvider(resend).detect(receipt_text, kkt, inn)
 
         if not type(ofd_receipt) is bool:
             items = ofd_receipt.get_items()
