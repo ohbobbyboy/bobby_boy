@@ -1,6 +1,6 @@
 requests
 zbar
 pillow==2.1.0
-suds
 pygame==1.9.3
+qrtools
 bs4

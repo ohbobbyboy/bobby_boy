@@ -99,7 +99,6 @@ ENV/
 
 # bobby_boy
 test_*
-config.py
 materials
 receipts
 reports
