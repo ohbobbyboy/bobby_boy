@@ -98,8 +98,6 @@ ENV/
 /site
 
 # bobby_boy
-test_*
-config.py
 materials
 receipts
 reports

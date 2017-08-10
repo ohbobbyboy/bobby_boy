@@ -21,7 +21,7 @@ class OFDProvider:
     # ФД
     fiscal_document_number = None
     # номер ФПД
-    # фискальный признак документа
+    # фискальный признак документа (подпись)
     # fp
     # ФП
     fiscal_id = None

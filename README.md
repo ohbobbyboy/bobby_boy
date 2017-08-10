@@ -61,6 +61,12 @@ sudo apt-get build-dep python-pygame && sudo apt-get install python-dev
 pip install -r requirements.txt
 ```
 
+### Тестирование
+
+```
+python -m unittest discover
+```
+
 ### Обсуждение
 
 Отзывы и предложения по программе отправлять в соответствующую [ветку форума Drebedengi.ru](https://www.drebedengi.ru/?module=forumMessageList&topic_id=8486).

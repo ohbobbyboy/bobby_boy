@@ -122,7 +122,7 @@ class Drebedengi:
         sum_blocks = soup.find_all("span", class_="red")
 
         for sum_block in sum_blocks:
-            if sum_block.text == "-"+str(sum):
+            if sum_block.text == "-"+str(summa):
                 print("SMS with the receipt was found, it will be deleted after import")
 
                 parent_tag = sum_block.parent.parent.parent
