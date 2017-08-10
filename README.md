@@ -44,7 +44,7 @@ bobby_boy
 
 По умолчанию происходит распознавание QR-кода через веб-камеру. Для ручного ввода уже распознанного текста следует добавить ключ запуска `--text`.
 
-При первом запуске необходимо скопировать `config_template.py` в `config.py` и ввести свои данные:
+Для интеграции в `config.py` необходимо ввести свои данные:
 - Логин и пароль от аккаунта в Дребеденьгах
 - Валюту
 - Место списания (счёт) 
@@ -57,8 +57,13 @@ bobby_boy
 
 Работа проверена на Ubuntu Linux 16.04, для установки выполнить:
 ```
-sudo apt-get build-dep python-pygame && sudo apt-get install python-dev
+sudo apt-get install python-dev libzbar-dev
+sudo apt-get build-dep python-pygame
 pip install -r requirements.txt
+```
+Если сборка PIL прекращается на `#include <freetype/fterrors.h>`, то выполнить:
+```
+sudo ln -s /usr/include/freetype2 /usr/local/include/freetype
 ```
 
 ### Тестирование

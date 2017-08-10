@@ -94,8 +94,11 @@ class OFDProvider:
                     ofd = provider(self.resend)
                     ofd.load(data)
                     # если поиск успешен, то возвращаем инстанс чека этого ОФД
-                    if ofd.search():
-                        return ofd
+                    try:
+                        if ofd.search():
+                            return ofd
+                    except Exception as e:
+                        print("Request error: "+str(e))
 
             return True
 
@@ -252,7 +255,9 @@ class PlatformaOFD(OFDProvider):
     def search(self):
         print("Search in Platforma OFD...")
         request = requests.get(self.url_receipt_get.format(
-            self.fiscal_drive_id, self.fiscal_id))
+            self.fiscal_drive_id, self.fiscal_id), verify=False)
+        # ssl verification disabled
+        # workaround for error: hostname 'lk.platformaofd.ru' doesn't match either of '*.evotor.ru', 'evotor.ru'
         if "Чек не найден" in request.content:
             print("Not found!")
             return False
