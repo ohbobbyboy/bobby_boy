@@ -12,6 +12,7 @@ from qrtools import QR
 
 def get_qr_content(with_gui=False, manual_detect=False):
 
+    screen = None
     detected = False
     camera.init()
     if not camera.list_cameras():
@@ -27,7 +28,7 @@ def get_qr_content(with_gui=False, manual_detect=False):
         cam.start()
 
         if with_gui:
-            screen = pygame.display.set_mode(cam.get_size())
+            screen = pygame.display.set_mode(size)
             pygame.display.set_caption("Check QR recognize")
     else:
         with_gui = True

@@ -13,10 +13,10 @@ http_csv_confirm_url = "https://www.drebedengi.ru/?module=v2_homeBuhPrivateImpor
 http_search_url = "https://www.drebedengi.ru/?module=v2_homeBuhPrivateReport"
 http_delete_item_url = "https://www.drebedengi.ru/?module=v2_homeBuhPrivateTextReportMain"
 
+
 class Drebedengi:
     session = None
     categories = []
-
 
     def __init__(self, user, passw):
         session = requests.Session()
@@ -36,14 +36,11 @@ class Drebedengi:
         self.categories = categories[1:]
         self.session = session
 
-
     def logged_in(self):
-        return self.session != None
-
+        return self.session is not None
 
     def get_categories(self):
         return self.categories
-
 
     def send_csv(self, filename):
         data = {
@@ -65,7 +62,6 @@ class Drebedengi:
             print("Something went wrong...")
             return False
 
-
     def delete_item(self, item_id):
         payload = {
             'action': 'delete_item',
@@ -76,7 +72,6 @@ class Drebedengi:
         r = self.session.post(http_delete_item_url, data=payload)
         if r.status_code == 200:
             print("Old SMS item successfully removed!")
-
 
     def search(self, date, summa):
         date = date.split()[0]

@@ -1,12 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import re
-import os
-import json
-import config
-import requests
 import datetime
+import json
+import os
+import re
+import sys
+
+import requests
 from bs4 import BeautifulSoup
+
+import config
 
 
 class OFDProvider:
@@ -45,6 +48,8 @@ class OFDProvider:
     resend = False
     # место хранения и траты денег по умолчанию
     payment_method = config.payment_method['default']
+    # время из чека
+    raw_time = None
 
     # регулярное выражение для проверки соответствия формату текста QR
     ofd_type1_match_regexp = "t=([\dT]+)&s=([\d\.]+)&fn=(\d+)&i=(\d+)&fp=(\d+)&n=(\d+)"
@@ -56,7 +61,8 @@ class OFDProvider:
         for key in data:
             setattr(self, key, data[key])
 
-    def parse_data(self, fields):
+    @staticmethod
+    def parse_data(fields):
         time = datetime.datetime.strptime(fields[0], "%Y%m%dT%H%M%S")
         drebtime = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -81,7 +87,8 @@ class OFDProvider:
             data = self.parse_data(ofd_type1_match.groups())
 
             print("Ticket {3} at {0} with sum {1}, FPD {4}, fiscal drive {2} (n={5})".format(
-                data['time'], data['raw_sum'], data['fiscal_drive_id'], data['fiscal_document_number'], data['fiscal_id'], data['number']))
+                data['time'], data['raw_sum'], data['fiscal_drive_id'], data['fiscal_document_number'],
+                data['fiscal_id'], data['number']))
 
             data['kkt'] = kkt
             data['inn'] = inn
@@ -98,7 +105,7 @@ class OFDProvider:
                         if ofd.search():
                             return ofd
                     except Exception as e:
-                        print("Request error: "+str(e))
+                        print("Request error: " + str(e))
 
             return True
 
@@ -112,22 +119,25 @@ class OFDProvider:
 
     # имя файла для сохранения контента чека из ОФД
     def get_receipt_file_name(self):
-        filename = self.raw_time + "_" + self.fiscal_id + \
-            "_" + self.fiscal_drive_id + ".txt"
+        filename = os.path.dirname(os.path.realpath(__file__)) + \
+                   self.raw_time + "_" + self.fiscal_id + \
+                   "_" + self.fiscal_drive_id + ".txt"
         return os.path.join(config.receipt_dir, filename)
 
     # имя файла для сохранения файла загрузки в Дребеденьги
     def get_csv_file_name(self):
         filename = self.raw_time + "_" + self.fiscal_id + \
-            "_" + self.fiscal_drive_id + ".csv"
+                   "_" + self.fiscal_drive_id + ".csv"
         return os.path.join(config.report_dir, filename)
 
 
 class OFDRU(OFDProvider):
     url_receipt_get = "https://ofd.ru/api/rawdoc/RecipeInfo?Fn={}&Kkt={}&Inn={}&Num={}&Sign={}"
 
-    def is_suitable(self, data):
-        return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number'] and data['kkt'] and data['inn']
+    @staticmethod
+    def is_suitable(data):
+        return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number'] and data['kkt'] and \
+               data['inn']
 
     def search(self):
         print("Search in OFD.RU...")
@@ -184,8 +194,9 @@ class OFDRU(OFDProvider):
 class Taxcom(OFDProvider):
     url_receipt_get = "https://receipt.taxcom.ru/v01/show?fp={}&s={}"
 
-    def is_suitable(self, data):
-        return data['fiscal_id']  and not data['kkt']
+    @staticmethod
+    def is_suitable(data):
+        return data['fiscal_id'] and not data['kkt']
 
     def search(self):
         print("Search in Taxcom...")
@@ -205,7 +216,6 @@ class Taxcom(OFDProvider):
 
     def get_items(self):
         if self.receipt_data:
-            total_sum = 0
             soup = BeautifulSoup(self.receipt_data, "lxml")
             rows = soup.select("td.position")[:-1]
             price_counts = soup.select("tr.result")
@@ -222,8 +232,8 @@ class Taxcom(OFDProvider):
 
                 name = row.get_text().encode("utf-8")
 
-                price = float(extract_price(price_counts[i]).replace(',','.'))
-                count = float(extract_count(price_counts[i]).replace(',','.'))
+                price = float(extract_price(price_counts[i]).replace(',', '.'))
+                count = float(extract_count(price_counts[i]).replace(',', '.'))
                 summa = price * count
                 self.total_sum += summa
                 if count != 1:
@@ -249,7 +259,8 @@ class Taxcom(OFDProvider):
 class PlatformaOFD(OFDProvider):
     url_receipt_get = "https://lk.platformaofd.ru/web/noauth/cheque?fn={}&fp={}"
 
-    def is_suitable(self, data):
+    @staticmethod
+    def is_suitable(data):
         return data['fiscal_drive_id'] and data['fiscal_id'] and not data['kkt']
 
     def search(self):
@@ -272,7 +283,6 @@ class PlatformaOFD(OFDProvider):
 
     def get_items(self):
         if self.receipt_data:
-            total_sum = 0
             soup = BeautifulSoup(self.receipt_data, "lxml")
             rows = soup.select("div.row")
             self.total_sum = 0
@@ -319,16 +329,17 @@ class OFD1(OFDProvider):
     url_receipt_get = "https://consumer.1-ofd.ru/api/tickets/ticket/{}"
     url_receipt_find = "https://consumer.1-ofd.ru/api/tickets/find-ticket"
 
-    def is_suitable(self, data):
+    @staticmethod
+    def is_suitable(data):
         return data['fiscal_drive_id'] and data['fiscal_id'] and data['fiscal_document_number'] and not data['kkt']
 
     def search(self):
         print("Search in ofd1...")
 
         ofd1_payload = {
-            "fiscalDocumentNumber":	self.fiscal_document_number,
-            "fiscalDriveId":		self.fiscal_drive_id,
-            "fiscalId":				self.fiscal_id
+            "fiscalDocumentNumber": self.fiscal_document_number,
+            "fiscalDriveId": self.fiscal_drive_id,
+            "fiscalId": self.fiscal_id
         }
         # fix for single quotes server error
         ofd1_payload = json.dumps(ofd1_payload, sort_keys=True)
@@ -352,7 +363,7 @@ class OFD1(OFDProvider):
 
         ofd1 = session.post(self.url_receipt_find, data=ofd1_payload)
 
-        if (ofd1.status_code == 200):
+        if ofd1.status_code == 200:
             answer = ofd1.json()
             status = answer["status"]
             self.receipt_id = answer["uid"]
@@ -360,7 +371,7 @@ class OFD1(OFDProvider):
             print("Getting the receipt...")
             ofd1 = requests.get(self.url_receipt_get.format(self.receipt_id))
 
-            if (ofd1.status_code == 200):
+            if ofd1.status_code == 200:
                 self.raw = json.dumps(
                     ofd1.json(), ensure_ascii=False).encode('utf8')
                 self.receipt_data = json.loads(self.raw)
@@ -383,7 +394,7 @@ class OFD1(OFDProvider):
                 if config.debug:
                     print(ofd1.text)
 
-        elif (ofd1.status_code == 404):
+        elif ofd1.status_code == 404:
             print("Not found!")
 
         else:
@@ -427,10 +438,12 @@ class OFD1(OFDProvider):
             print("No receipt data!")
             return False
 
+
 class OFDYA(OFDProvider):
     url_receipt_get = "https://ofd-ya.ru/getFiscalDoc?kktRegId={}&fiscalSign={}&json=true"
 
-    def is_suitable(self, data):
+    @staticmethod
+    def is_suitable(data):
         return data['fiscal_document_number'] and data['kkt']
 
     def search(self):

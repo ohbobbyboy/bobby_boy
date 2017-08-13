@@ -9,6 +9,7 @@ import report
 from ofd import OFDProvider
 from drebedengi import Drebedengi
 
+
 # создаём необходимые директории если отсутствуют
 def init():
     if not os.path.exists(config.receipt_dir):
@@ -44,14 +45,14 @@ args = parser.parse_args()
 
 init()
 
-if not args.text is None:
+if args.text is not None:
     # распознаём из введённого текста
     receipt = recognize(config.already_recognized_send, args.text)
 else:
     receipt = recognize(config.already_recognized_send,
                         qr.get_content_with_gui())
 
-if receipt:
+if receipt is not None:
     report_name = receipt.get_csv_file_name()
     dreb_session = Drebedengi(config.username, config.password)
     if not dreb_session.logged_in():

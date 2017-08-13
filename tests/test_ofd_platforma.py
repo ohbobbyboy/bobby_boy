@@ -15,7 +15,7 @@ class TestOFDTaxcom(unittest.TestCase):
         """ Setup """
         config.debug = False
         cls.OFD = ofd.OFDProvider(True).detect(
-            "t=20170712T133051&s=32.50&fn=8710000100924702&i=1666&fp=3502055476&n=1")
+            "t=20170714T1311&s=35.00&fn=8710000100837497&i=231&fp=2921685295&n=1")
 
     def test_search(self):
         self.assertIsNotNone(self.OFD)
@@ -28,13 +28,13 @@ class TestOFDTaxcom(unittest.TestCase):
 
     def test_first_item(self):
         item_name = self.OFD.get_items()[0][0]
-        self.assertEqual(item_name, "Газ вода Пепси Вайлд Черри 0,6л ЖЦ по 31,08,17 ВЫГ")
+        self.assertEqual(item_name, "Пицца Маргарита 1 шт.")
 
     def test_receipt_total_sum(self):
-        self.assertEqual(self.OFD.total_sum, '32.90')
+        self.assertEqual(self.OFD.total_sum, '35.00')
 
     def test_receipt_final_sum(self):
-        self.assertEqual(self.OFD.raw_sum, '32.50')
+        self.assertEqual(self.OFD.raw_sum, '35.00')
 
 if __name__ == '__main__':
     unittest.main()

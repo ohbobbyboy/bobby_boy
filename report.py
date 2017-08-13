@@ -1,10 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
 import csv
 import config
 import subprocess
-from ofd import OFDProvider
 
 
 def edit(filename):
