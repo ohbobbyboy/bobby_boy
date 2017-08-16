@@ -5,7 +5,7 @@ import ofd
 import config
 
 
-class TestOFDTaxcom(unittest.TestCase):
+class TestOFDPlatforma(unittest.TestCase):
 
     """ E2E unittest OFD-interactions """
     OFD = None

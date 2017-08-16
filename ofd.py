@@ -451,7 +451,9 @@ class OFDYA(OFDProvider):
         url = self.url_receipt_get.format(self.kkt, self.fiscal_id)
         request = requests.get(url)
         if request.status_code == 200 and request.text != '{}':
-            self.receipt_data = request.content
+            self.raw = json.dumps(
+                request.json(), ensure_ascii=False).encode('utf8')
+            self.receipt_data = json.loads(self.raw)
             filename = self.get_receipt_file_name()
 
             if not os.path.exists(filename):
@@ -468,7 +470,6 @@ class OFDYA(OFDProvider):
     def get_items(self):
         if self.receipt_data:
             self.total_sum = 0
-            self.receipt_data = json.loads(self.receipt_data)
             items_count = len(self.receipt_data["requestmessage"]["items"])
             print("Found items: {}".format(items_count))
 
